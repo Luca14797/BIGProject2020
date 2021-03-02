@@ -1,5 +1,6 @@
 from dataset.load_dataset import load
 from pyspark import SparkContext, SparkConf
+from pyspark.sql import SparkSession
 
 
 def main():
@@ -8,10 +9,10 @@ def main():
     conf = SparkConf().setMaster("local").setAppName("My App")
     sc = SparkContext(conf=conf)
 
-    print("Load dataset")
-    dataset = load.load_texts(sc=sc, folder_name="../dataset/texts")
+    spark = SparkSession.builder.appName("My App").config("spark.some.config.option", "some-value").getOrCreate()
 
-    print(dataset.take(1))
+    print("Load dataset")
+    dataset = load.load_dataset(spark=spark, file_name="../dataset/prova.json")
 
 
 if __name__ == '__main__':

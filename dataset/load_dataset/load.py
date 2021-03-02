@@ -2,10 +2,10 @@ import json
 import os
 
 
-def load_dataset(sc, file_name):
+def load_dataset(spark, file_name):
 
-    input = sc.textFile(file_name)
-    data = input.map(lambda x: json.loads(x))
+    data = spark.read.json(file_name, multiLine="true")
+    print(data.select("1063020048816660480").show(1, False))
 
     return data
 
@@ -25,6 +25,6 @@ def load_texts(sc, folder_name):
         input = sc.textFile(folder_name + '/' + text)
         data = input.map(lambda x: json.loads(x))
 
-        rdd.union(data)
+        rdd = rdd.union(data)
 
     return rdd
