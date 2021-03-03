@@ -5,26 +5,34 @@ import os
 def load_dataset(spark, file_name):
 
     data = spark.read.json(file_name, multiLine="true")
-    print(data.select("1063020048816660480").show(1, False))
+    print(data.show(10, False))
 
     return data
 
 
-def load_texts(sc, folder_name):
+def load_texts(spark, folder_name, data_info):
 
-    texts = os.listdir(folder_name)
+    #texts = os.listdir(folder_name)
+    texts = ["1114679353714016256.json", "1063020048816660480.json", "1106978219654303744.json"]
 
-    rdd = sc.emptyRDD()
+    texts_info = None
 
-    print("Start create RDD ...")
+    print("Start create DataFrame ...")
 
     for text in texts:
 
-        print("Read file: " + text)
+        file_name = os.path.splitext(text)[0]
 
-        input = sc.textFile(folder_name + '/' + text)
-        data = input.map(lambda x: json.loads(x))
+        print("Read file: " + file_name)
 
-        rdd = rdd.union(data)
+        text_info = data_info.select(file_name)
 
-    return rdd
+        if texts_info is None:
+
+            texts_info = text_info
+
+        else:
+
+            texts_info = texts_info.union(text_info)
+
+    return texts_info

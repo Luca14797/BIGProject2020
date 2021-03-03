@@ -12,7 +12,9 @@ def main():
     spark = SparkSession.builder.appName("My App").config("spark.some.config.option", "some-value").getOrCreate()
 
     print("Load dataset")
-    dataset = load.load_dataset(spark=spark, file_name="../dataset/prova.json")
+    data_info = load.load_dataset(spark=spark, file_name="../dataset/prova.json")
+    dataset = load.load_texts(spark=spark, folder_name="../dataset/texts", data_info=data_info)
+    print(dataset.show(10, False))
 
 
 if __name__ == '__main__':
