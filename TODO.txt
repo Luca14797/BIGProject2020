@@ -1,0 +1,4 @@
+TODO:
+- cercare significato parole
+- guardare su slide bag of word
+- suddivisione files
