@@ -13,8 +13,8 @@ def main():
     spark = SparkSession.builder.appName("My App").config("spark.some.config.option", "some-value").getOrCreate()
 
     print("Load dataset")
-    data_info = load.load_dataset(spark=spark, file_name="../dataset/prova.json")
-    dataset = load.load_texts(spark=spark, folder_name="../dataset/texts", data_info=data_info)
+    data_info = load.load_dataset(spark=spark, file_name="../dataset/info_texts.json")
+    dataset = load.load_texts(spark=spark, sc=sc, base_path="../dataset", data_info=data_info, split_name='val')
 
     wordsData = extract_frequency.extract_words(data=dataset, col_name='tweet_text')
     featurizedData = extract_frequency.extract_feature(wordsData=wordsData)

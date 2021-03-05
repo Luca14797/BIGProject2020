@@ -9,12 +9,14 @@ def load_dataset(spark, file_name):
     return data
 
 
-def load_texts(spark, folder_name, data_info):
+def load_texts(spark, sc, base_path, data_info, split_name):
 
-    #texts = os.listdir(folder_name)
-    texts = ["1114679353714016256.json", "1063020048816660480.json", "1106978219654303744.json"]
+    texts = os.listdir(base_path + '/texts/')
+    texts_split = sc.textFile(base_path + '/splits' + split_name + '.txt').collect()
 
-    texts_info = spark.createDataFrame([], data_info.select("1035252480215592966.*").schema)
+    #texts = ["1114679353714016256.json", "1063020048816660480.json", "1106978219654303744.json"]
+
+    texts_info = spark.createDataFrame([], data_info.select(texts_split[0] + '.*').schema)
     texts_info = texts_info.withColumn("id", sf.lit(''))
     texts_info = texts_info.select('id', 'img_url', 'labels', 'labels_str', 'tweet_text', 'tweet_url')
 
@@ -24,13 +26,16 @@ def load_texts(spark, folder_name, data_info):
 
         file_name = os.path.splitext(text)[0]
 
-        #print("Read file: " + file_name)
+        if file_name in texts_split:
 
-        text_info = data_info.select(file_name + ".*")
+            #print("Read file: " + file_name)
 
-        text_info = text_info.withColumn("id", sf.lit(file_name))
-        text_info = text_info.select('id', 'img_url', 'labels', 'labels_str', 'tweet_text', 'tweet_url')
+            text_info = data_info.select(file_name + ".*")
 
-        texts_info = texts_info.union(text_info)
+            text_info = text_info.withColumn("id", sf.lit(file_name))
+            text_info = text_info.select('id', 'img_url', 'labels', 'labels_str', 'tweet_text', 'tweet_url')
+
+            texts_info = texts_info.union(text_info)
 
     return texts_info
+
