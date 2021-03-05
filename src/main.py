@@ -1,5 +1,5 @@
-from dataset.load_dataset import load
-from src.bag_of_words import extract_frequency
+from load_dataset import load
+from bag_of_words import extract_frequency
 from pyspark import SparkContext, SparkConf
 from pyspark.sql import SparkSession
 
@@ -7,10 +7,11 @@ from pyspark.sql import SparkSession
 def main():
 
     print("Create Spark Context")
-    conf = SparkConf().setMaster("local").setAppName("My App")
+    conf = SparkConf().setMaster("spark://DESKTOP-HTII7QG.localdomain:7077").setAppName("My App")
     sc = SparkContext(conf=conf)
 
-    spark = SparkSession.builder.appName("My App").config("spark.some.config.option", "some-value").getOrCreate()
+    spark = SparkSession.builder.master("spark://DESKTOP-HTII7QG.localdomain:7077").appName("My App")\
+        .config("spark.some.config.option", "some-value").getOrCreate()
 
     print("Load dataset")
     data_info = load.load_dataset(spark=spark, file_name="../dataset/info_texts.json")
