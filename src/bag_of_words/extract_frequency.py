@@ -11,7 +11,7 @@ def extract_words(data, col_name):
 
 def extract_feature(wordsData):
 
-    hashingTF = HashingTF(inputCol="words", outputCol="rawFeatures", numFeatures=100000000)
+    hashingTF = HashingTF(inputCol="words", outputCol="rawFeatures", numFeatures=100000)
     featurizedData = hashingTF.transform(wordsData)
 
     return featurizedData
