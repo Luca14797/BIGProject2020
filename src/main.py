@@ -20,7 +20,7 @@ def main():
         .getOrCreate()
 
     print("Load dataset")
-    data_info = load.load_dataset(spark=spark, file_name="../dataset/prova.json")
+    data_info = load.load_dataset(spark=spark, file_name="../dataset/info_texts.json")
     dataset = load.load_texts(spark=spark, sc=sc, base_path="../dataset", data_info=data_info, split_name='train')
 
     tokenizer, hashingTF, idf = extract_features.tf_idf("tweet_text")

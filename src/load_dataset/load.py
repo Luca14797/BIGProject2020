@@ -11,9 +11,10 @@ def load_dataset(spark, file_name):
 
 def load_texts(spark, sc, base_path, data_info, split_name):
 
-    #texts = os.listdir(base_path + '/texts/')
+    texts = os.listdir(base_path + '/texts/')
     texts_split = sc.textFile(base_path + '/splits/' + split_name + '.txt').collect()
 
+    '''
     texts = ["1114679353714016256.json", "1063020048816660480.json", "1108927368075374593.json",
              "1114558534635618305.json", "1035252480215592966.json", "1106978219654303744.json",
              "1113920043568463874.json", "1114588617693966336.json", "1045809514740666370.json",
@@ -30,17 +31,19 @@ def load_texts(spark, sc, base_path, data_info, split_name):
              "1053685584118583297.json", "1108208774639165440.json", "1113664242274664451.json",
              "1061668739022815232.json", "1110336630659969024.json", "1114381633614950400.json",
              "1108253229102624768.json", "1035521443927416832.json", "1037466084511830019.json"]
+    '''
 
-    #texts_info = spark.createDataFrame([], data_info.select(texts_split[0] + '.*').schema)
-    texts_info = spark.createDataFrame([], data_info.select("1114679353714016256.*").schema)
+    texts_info = spark.createDataFrame([], data_info.select(texts_split[0] + '.*').schema)
+    #texts_info = spark.createDataFrame([], data_info.select("1114679353714016256.*").schema)
     texts_info = texts_info.withColumn("id", sf.lit(''))
     texts_info = texts_info.select('id', 'img_url', 'labels', 'labels_str', 'tweet_text', 'tweet_url')
 
     print("Start create DataFrame ...")
 
-    for text in texts:
+    #for text in texts:
+    for i in range(len(texts)//2):
 
-        file_name = os.path.splitext(text)[0]
+        file_name = os.path.splitext(texts[i])[0]
 
         if file_name in texts_split:
 
