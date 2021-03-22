@@ -130,6 +130,3 @@ dmypy.json
 
 # PyCharm conf
 .idea/
-
-# Dataset
-dataset/texts/
