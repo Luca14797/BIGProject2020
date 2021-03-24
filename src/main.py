@@ -12,12 +12,11 @@ def main():
     sc = SparkContext.getOrCreate(conf=conf)
 
     print("Create Spark Session ...")
-    spark = SparkSession.builder.appName("Big Data project").config("spark.some.config.option", "some-value")\
-        .getOrCreate()
+    spark = SparkSession.builder.appName("Big Data project").getOrCreate()
 
     print("Load Dataset ...")
-    data_info = load.load_dataset(spark=spark, file_name="../dataset/info_texts.json")
-    dataset = load.load_texts(spark=spark, sc=sc, base_path="../dataset", data_info=data_info, split_name='train')
+    data_info = load.load_dataset(spark=spark, file_name="dataset/info_texts.json")
+    dataset = load.load_texts(spark=spark, sc=sc, base_path="dataset", data_info=data_info, split_name='train')
 
     print("Start Logistic Regression ...")
     tokenizer, hashingTF, idf = extract_features.tf_idf("tweet_text")
