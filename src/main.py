@@ -3,11 +3,12 @@ from pyspark.sql import SparkSession
 from pyspark.ml.classification import LogisticRegression
 from pyspark.ml.feature import HashingTF, IDF, RegexTokenizer
 from pyspark.sql.functions import udf
-from pyspark.sql.types import StringType
+from pyspark.sql.types import StringType, StructType, StructField, ArrayType, LongType
 from pyspark.ml.feature import StringIndexer
 from pyspark.ml import Pipeline
 
 import pyspark.sql.functions as sf
+import json
 
 
 def tf_idf(col_name):
@@ -37,9 +38,11 @@ def create_pipeline(tokenizer, hashingTF, idf, label_stringIdx, dataset):
     return dataset
 
 
-def load_dataset(spark, file_name):
+def load_dataset(sc, file_name):
 
-    data = spark.read.json(file_name, multiLine="true")
+    info_texts = sc.textFile(file_name)
+
+    data = info_texts.map(lambda x: json.loads(x)).toDF()
 
     return data
 
@@ -79,8 +82,8 @@ def main():
     spark = SparkSession.builder.appName("Big Data project").getOrCreate()
 
     print("Load Dataset ...")
-    data_info = load_dataset(spark=spark, file_name="dataset/info_texts.json")
-    dataset = load_texts(spark=spark, sc=sc, base_path="dataset", data_info=data_info, split_name='train')
+    dataset = load_dataset(sc=sc, file_name="../dataset/new_info_texts.json")
+    #dataset = load_texts(spark=spark, sc=sc, base_path="../dataset", data_info=data_info, split_name='train')
 
     print("Start Logistic Regression ...")
     tokenizer, hashingTF, idf = tf_idf("tweet_text")
@@ -94,7 +97,7 @@ def main():
     predictions = lrModel.transform(testData)
     predictions.select("id", "labels_str", "tweet_text", "words", "probability", "label", "prediction") \
         .orderBy("probability", ascending=False) \
-        .show(n=10, truncate=30)
+        .show(n=100, truncate=30)
 
 
 if __name__ == '__main__':
