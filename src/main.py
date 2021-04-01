@@ -1,10 +1,10 @@
 from pyspark import SparkContext, SparkConf
 from pyspark.sql import SparkSession
-from pyspark.ml.classification import LogisticRegression
+from pyspark.ml.classification import LogisticRegression, MultilayerPerceptronClassifier
+from pyspark.ml.evaluation import MulticlassClassificationEvaluator
 from pyspark.ml.feature import HashingTF, IDF, RegexTokenizer
 from pyspark.sql.functions import udf
-from pyspark.sql.types import StringType, StructType, StructField, ArrayType, LongType
-from pyspark.ml.feature import StringIndexer
+from pyspark.sql.types import IntegerType
 from pyspark.ml import Pipeline
 
 import pyspark.sql.functions as sf
@@ -14,7 +14,7 @@ import json
 def tf_idf(col_name):
 
     tokenizer = RegexTokenizer(inputCol=col_name, outputCol="words", pattern="\\W")
-    hashingTF = HashingTF(inputCol="words", outputCol="rawFeatures", numFeatures=10000)
+    hashingTF = HashingTF(inputCol="words", outputCol="rawFeatures", numFeatures=150)
     idf = IDF(inputCol="rawFeatures", outputCol="features", minDocFreq=5)  # minDocFreq: remove sparse terms
 
     return tokenizer, hashingTF, idf
@@ -22,16 +22,15 @@ def tf_idf(col_name):
 
 def transform_labels(dataset):
 
-    to_string_udf = udf(lambda x: ''.join(str(e) for e in x), StringType())
-    dataset = dataset.withColumn("labelstring", to_string_udf(dataset.labels))
-    label_stringIdx = StringIndexer(inputCol="labelstring", outputCol="label")
+    to_single_label = udf(lambda x: 0 if x.count(0) > 1 else 1, IntegerType())
+    dataset = dataset.withColumn("label", to_single_label(dataset.labels))
 
-    return label_stringIdx, dataset
+    return dataset
 
 
-def create_pipeline(tokenizer, hashingTF, idf, label_stringIdx, dataset):
+def create_pipeline(tokenizer, hashingTF, idf, dataset):
 
-    pipeline = Pipeline(stages=[tokenizer, hashingTF, idf, label_stringIdx])
+    pipeline = Pipeline(stages=[tokenizer, hashingTF, idf])
     pipelineFit = pipeline.fit(dataset)
     dataset = pipelineFit.transform(dataset)
 
@@ -82,22 +81,40 @@ def main():
     spark = SparkSession.builder.appName("Big Data project").getOrCreate()
 
     print("Load Dataset ...")
-    dataset = load_dataset(sc=sc, file_name="../dataset/new_info_texts.json")
+    dataset = load_dataset(sc=sc, file_name="../dataset/info_texts.json")
     #dataset = load_texts(spark=spark, sc=sc, base_path="../dataset", data_info=data_info, split_name='train')
 
-    print("Start Logistic Regression ...")
+    print("Prepare Logistic Regression ...")
     tokenizer, hashingTF, idf = tf_idf("tweet_text")
-    label_stringIdx, dataset = transform_labels(dataset)
-    dataset = create_pipeline(tokenizer, hashingTF, idf, label_stringIdx, dataset)
+    dataset = transform_labels(dataset)
+    dataset = create_pipeline(tokenizer, hashingTF, idf, dataset)
 
     print("Logistic Regression ...")
-    (trainingData, testData) = dataset.randomSplit([0.7, 0.3], seed=100)
-    lr = LogisticRegression(maxIter=20, regParam=0.3, elasticNetParam=0)
+    (trainingData, testData) = dataset.randomSplit([0.7, 0.3], seed=5043)
+
+    '''
+    lr = LogisticRegression(maxIter=10, regParam=0.3, elasticNetParam=0.0, labelCol="binary_label",
+                            featuresCol="features")
     lrModel = lr.fit(trainingData)
     predictions = lrModel.transform(testData)
-    predictions.select("id", "labels_str", "tweet_text", "words", "probability", "label", "prediction") \
-        .orderBy("probability", ascending=False) \
-        .show(n=100, truncate=30)
+    predictions.select("id", "tweet_text", "probability", "features", "rawPrediction", "labels", "binary_label",
+                       "prediction").orderBy("probability", ascending=False).show(n=100, truncate=30)
+    '''
+
+    layers = [150, 64, 16, 2]
+
+    # create the trainer and set its parameters
+    trainer = MultilayerPerceptronClassifier(maxIter=10, layers=layers, blockSize=128, seed=1234)
+
+    # train the model
+    model = trainer.fit(trainingData)
+
+    # compute accuracy on the test set
+    result = model.transform(testData)
+    predictionAndLabels = result.select("prediction", "label")
+    evaluator = MulticlassClassificationEvaluator(metricName="accuracy")
+    result.select("prediction", "label").show(n=100, truncate=30)
+    print("Test set accuracy = " + str(evaluator.evaluate(predictionAndLabels)))
 
 
 if __name__ == '__main__':
