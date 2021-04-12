@@ -81,7 +81,7 @@ def main():
     spark = SparkSession.builder.appName("Big Data project").getOrCreate()
 
     print("Load Dataset ...")
-    dataset = load_dataset(sc=sc, file_name="../dataset/info_texts.json")
+    dataset = load_dataset(sc=sc, file_name="dataset/info_texts.json")
     #dataset = load_texts(spark=spark, sc=sc, base_path="../dataset", data_info=data_info, split_name='train')
 
     print("Prepare Logistic Regression ...")
@@ -91,15 +91,6 @@ def main():
 
     print("Logistic Regression ...")
     (trainingData, testData) = dataset.randomSplit([0.7, 0.3], seed=5043)
-
-    '''
-    lr = LogisticRegression(maxIter=10, regParam=0.3, elasticNetParam=0.0, labelCol="binary_label",
-                            featuresCol="features")
-    lrModel = lr.fit(trainingData)
-    predictions = lrModel.transform(testData)
-    predictions.select("id", "tweet_text", "probability", "features", "rawPrediction", "labels", "binary_label",
-                       "prediction").orderBy("probability", ascending=False).show(n=100, truncate=30)
-    '''
 
     layers = [150, 64, 16, 2]
 
