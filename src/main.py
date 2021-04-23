@@ -1,13 +1,12 @@
 from pyspark import SparkContext, SparkConf
 from pyspark.sql import SparkSession
-from pyspark.ml.classification import LogisticRegression, MultilayerPerceptronClassifier
+from pyspark.ml.classification import MultilayerPerceptronClassifier
 from pyspark.ml.evaluation import MulticlassClassificationEvaluator
 from pyspark.ml.feature import HashingTF, IDF, RegexTokenizer
 from pyspark.sql.functions import udf
 from pyspark.sql.types import IntegerType
 from pyspark.ml import Pipeline
 
-import pyspark.sql.functions as sf
 import json
 
 
@@ -22,7 +21,7 @@ def tf_idf(col_name):
 
 def transform_labels(dataset):
 
-    to_single_label = udf(lambda x: 0 if x.count(0) > 1 else 1, IntegerType())
+    to_single_label = udf(lambda x: 0 if x.count(0) > 0 else 1, IntegerType())
     dataset = dataset.withColumn("label", to_single_label(dataset.labels))
 
     return dataset
@@ -53,14 +52,7 @@ def load_texts(sc, base_path, data_info, split_name):
 
     texts_list = texts.filter(lambda x: x in texts_split).collect()
 
-    texts_info = data_info.filter(data_info.id == texts_list[0])
-    texts_list.pop(0)
-
-    for text in texts_list:
-
-        text_info = data_info.filter(data_info.id == text)
-
-        texts_info = texts_info.union(text_info)
+    texts_info = data_info.filter(data_info.id.isin(texts_list))
 
     return texts_info
 
