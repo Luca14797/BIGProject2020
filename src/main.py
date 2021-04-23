@@ -46,25 +46,19 @@ def load_dataset(sc, file_name):
     return data
 
 
-def load_texts(spark, sc, base_path, data_info, split_name):
+def load_texts(sc, base_path, data_info, split_name):
 
     texts = sc.textFile(base_path + "/texts_list.txt")
     texts_split = sc.textFile(base_path + '/splits/' + split_name + '.txt').collect()
 
-    texts_info = spark.createDataFrame([], data_info.select(texts_split[0] + '.*').schema)
-    texts_info = texts_info.withColumn("id", sf.lit(''))
-    texts_info = texts_info.select('id', 'img_url', 'labels', 'labels_str', 'tweet_text', 'tweet_url')
-
-    print("Start create DataFrame ...")
-
     texts_list = texts.filter(lambda x: x in texts_split).collect()
+
+    texts_info = data_info.filter(data_info.id == texts_list[0])
+    texts_list.pop(0)
 
     for text in texts_list:
 
-        text_info = data_info.select(text + ".*")
-
-        text_info = text_info.withColumn("id", sf.lit(text))
-        text_info = text_info.select('id', 'img_url', 'labels', 'labels_str', 'tweet_text', 'tweet_url')
+        text_info = data_info.filter(data_info.id == text)
 
         texts_info = texts_info.union(text_info)
 
@@ -82,15 +76,23 @@ def main():
 
     print("Load Dataset ...")
     dataset = load_dataset(sc=sc, file_name="dataset/info_texts.json")
-    #dataset = load_texts(spark=spark, sc=sc, base_path="../dataset", data_info=data_info, split_name='train')
 
-    print("Prepare Logistic Regression ...")
+    print("Split Dataset ...")
+    trainingData = load_texts(sc=sc, base_path="dataset", data_info=dataset, split_name='train')
+    testData = load_texts(sc=sc, base_path="dataset", data_info=dataset, split_name='test')
+
+    print("Prepare Multilayer Perceptron ...")
+    # prepare training data
     tokenizer, hashingTF, idf = tf_idf("tweet_text")
-    dataset = transform_labels(dataset)
-    dataset = create_pipeline(tokenizer, hashingTF, idf, dataset)
+    trainingData = transform_labels(trainingData)
+    trainingData = create_pipeline(tokenizer, hashingTF, idf, trainingData)
 
-    print("Logistic Regression ...")
-    (trainingData, testData) = dataset.randomSplit([0.7, 0.3], seed=5043)
+    # prepare test data
+    tokenizer, hashingTF, idf = tf_idf("tweet_text")
+    testData = transform_labels(testData)
+    testData = create_pipeline(tokenizer, hashingTF, idf, testData)
+
+    print("Multilayer Perceptron Training ...")
 
     layers = [150, 64, 16, 2]
 
@@ -100,11 +102,11 @@ def main():
     # train the model
     model = trainer.fit(trainingData)
 
+    print("Compute Accuracy ...")
     # compute accuracy on the test set
     result = model.transform(testData)
     predictionAndLabels = result.select("prediction", "label")
     evaluator = MulticlassClassificationEvaluator(metricName="accuracy")
-    result.select("prediction", "label").show(n=100, truncate=30)
     print("Test set accuracy = " + str(evaluator.evaluate(predictionAndLabels)))
 
 
