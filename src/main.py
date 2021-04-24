@@ -4,7 +4,7 @@ from pyspark.ml.classification import MultilayerPerceptronClassifier
 from pyspark.ml.evaluation import MulticlassClassificationEvaluator
 from pyspark.ml.feature import HashingTF, IDF, RegexTokenizer
 from pyspark.sql.functions import udf
-from pyspark.sql.types import IntegerType, BooleanType
+from pyspark.sql.types import IntegerType
 from pyspark.ml import Pipeline
 
 import json
@@ -36,19 +36,19 @@ def create_pipeline(tokenizer, hashingTF, idf, dataset):
     return dataset
 
 
-def load_dataset(sc, file_name):
+def load_dataset(sc, file_name, replication):
 
-    info_texts = sc.textFile(file_name)
+    info_texts = sc.textFile(file_name, replication)
 
     data = info_texts.map(lambda x: json.loads(x)).toDF()
 
     return data
 
 
-def load_texts(sc, base_path, data_info, split_name):
+def load_texts(sc, base_path, data_info, split_name, replication):
 
-    texts = sc.textFile(base_path + "/texts_list.txt")
-    texts_split = sc.textFile(base_path + '/splits/' + split_name + '.txt').collect()
+    texts = sc.textFile(base_path + "/texts_list.txt", replication)
+    texts_split = sc.textFile(base_path + '/splits/' + split_name + '.txt', replication).collect()
 
     texts_list = texts.filter(lambda x: x in texts_split).collect()
 
@@ -66,12 +66,14 @@ def main():
     print("Create Spark Session ...")
     spark = SparkSession.builder.appName("Big Data project").getOrCreate()
 
+    replication = ((3 * 2) * 2)
+
     print("Load Dataset ...")
-    dataset = load_dataset(sc=sc, file_name="dataset/info_texts.json")
+    dataset = load_dataset(sc=sc, file_name="dataset/info_texts.json", replication=replication)
 
     print("Split Dataset ...")
-    trainingData = load_texts(sc=sc, base_path="dataset", data_info=dataset, split_name='train')
-    testData = load_texts(sc=sc, base_path="dataset", data_info=dataset, split_name='test')
+    trainingData = load_texts(sc=sc, base_path="dataset", data_info=dataset, split_name='train', replication=replication)
+    testData = load_texts(sc=sc, base_path="dataset", data_info=dataset, split_name='test', replication=replication)
 
     print("Prepare Multilayer Perceptron ...")
     # prepare training data
