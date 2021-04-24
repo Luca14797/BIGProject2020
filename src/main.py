@@ -4,7 +4,7 @@ from pyspark.ml.classification import MultilayerPerceptronClassifier
 from pyspark.ml.evaluation import MulticlassClassificationEvaluator
 from pyspark.ml.feature import HashingTF, IDF, RegexTokenizer
 from pyspark.sql.functions import udf
-from pyspark.sql.types import IntegerType
+from pyspark.sql.types import IntegerType, BooleanType
 from pyspark.ml import Pipeline
 
 import json
@@ -52,7 +52,7 @@ def load_texts(sc, base_path, data_info, split_name):
 
     texts_list = texts.filter(lambda x: x in texts_split).collect()
 
-    texts_info = data_info.filter(data_info.id.isin(texts_list))
+    texts_info = data_info.rdd.filter(lambda row: (texts_list.count(row.id) > 0)).toDF()
 
     return texts_info
 
