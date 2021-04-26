@@ -11,23 +11,37 @@ import json
 import sys
 
 
+# This function create the model 'Bag-of-Words'
 def tf_idf(col_name):
 
+    # Split the tweet text in words and delete punctuation and special characters
     tokenizer = RegexTokenizer(inputCol=col_name, outputCol="words", pattern="\\W")
+
+    # Compute term frequency
     hashingTF = HashingTF(inputCol="words", outputCol="rawFeatures", numFeatures=150)
+
+    # Compute inverse document frequency and remove sparse terms
     idf = IDF(inputCol="rawFeatures", outputCol="features", minDocFreq=5)  # minDocFreq: remove sparse terms
 
     return tokenizer, hashingTF, idf
 
 
+# This function create a single label for each tweet texts
 def transform_labels(dataset):
 
+    # Each one of the 150,000 tweets is labeled by 3 different workers using AMT
+    # labels: array with 3 numeric labels [0-5] indicating the label by each one of the three AMT annotators
+    # 	      0 - NotHate, 1 - Racist, 2 - Sexist, 3 - Homophobe, 4 - Religion, 5 - OtherHate
+    # For this project only two labels were considered: Hate and NotHate
+    # To determine the label, the three labels of each tweet were checked
     to_single_label = udf(lambda x: 0 if x.count(0) > 0 else 1, IntegerType())
+
     dataset = dataset.withColumn("label", to_single_label(dataset.labels))
 
     return dataset
 
 
+# The function create a pipeline to be applied to the dataset
 def create_pipeline(tokenizer, hashingTF, idf, dataset):
 
     pipeline = Pipeline(stages=[tokenizer, hashingTF, idf])
@@ -37,6 +51,7 @@ def create_pipeline(tokenizer, hashingTF, idf, dataset):
     return dataset
 
 
+# This function load the json file containing the tweets
 def load_dataset(sc, file_name, replication):
 
     info_texts = sc.textFile(file_name, replication)
@@ -46,13 +61,20 @@ def load_dataset(sc, file_name, replication):
     return data
 
 
+# This function select only the tweets text and
+# split the dataset based on the split files
 def load_texts(sc, base_path, data_info, split_name, replication):
 
+    # Upload the file containing a list of tweet texts
     texts = sc.textFile(base_path + "/texts_list.txt", replication)
+
+    # Upload the split file
     texts_split = sc.textFile(base_path + '/splits/' + split_name + '.txt', replication).collect()
 
+    # Only tweet text are selected
     texts_list = texts.filter(lambda x: x in texts_split).collect()
 
+    # Split the dataset
     texts_info = data_info.rdd.filter(lambda row: (texts_list.count(row.id) > 0)).toDF()
 
     return texts_info
@@ -67,9 +89,11 @@ def main():
     print("Create Spark Session ...")
     spark = SparkSession.builder.appName("Big Data project").getOrCreate()
 
+    # This param define the number of workers
     numExecutors = int(sys.argv[1])
 
-    replication = ((numExecutors * 2) * 2)  # ((numExecutors  executorCore)  replicationFactor)
+    # Compute the number of partitions
+    replication = ((numExecutors * 2) * 2)  # ((numExecutors * executorCore) * replicationFactor)
 
     print("Load Dataset ...")
     dataset = load_dataset(sc=sc, file_name="dataset/info_texts.json", replication=replication)
@@ -79,28 +103,27 @@ def main():
     testData = load_texts(sc=sc, base_path="dataset", data_info=dataset, split_name='test', replication=replication)
 
     print("Prepare Multilayer Perceptron ...")
-    # prepare training data
+    # Prepare training data
     tokenizer, hashingTF, idf = tf_idf("tweet_text")
     trainingData = transform_labels(trainingData)
     trainingData = create_pipeline(tokenizer, hashingTF, idf, trainingData)
 
-    # prepare test data
+    # Prepare test data
     tokenizer, hashingTF, idf = tf_idf("tweet_text")
     testData = transform_labels(testData)
     testData = create_pipeline(tokenizer, hashingTF, idf, testData)
 
     print("Multilayer Perceptron Training ...")
-
     layers = [150, 64, 16, 2]
 
-    # create the trainer and set its parameters
+    # Create the trainer and set its parameters
     trainer = MultilayerPerceptronClassifier(maxIter=10, layers=layers, blockSize=128, seed=1234)
 
-    # train the model
+    # Train the model
     model = trainer.fit(trainingData)
 
     print("Compute Accuracy ...")
-    # compute accuracy on the test set
+    # Compute accuracy on the test set
     result = model.transform(testData)
     predictionAndLabels = result.select("prediction", "label")
     evaluator = MulticlassClassificationEvaluator(metricName="accuracy")
