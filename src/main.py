@@ -1,13 +1,14 @@
 from pyspark import SparkContext, SparkConf
 from pyspark.sql import SparkSession
+from pyspark.sql.functions import udf
+from pyspark.sql.types import IntegerType
 from pyspark.ml.classification import MultilayerPerceptronClassifier
 from pyspark.ml.evaluation import MulticlassClassificationEvaluator
 from pyspark.ml.feature import HashingTF, IDF, RegexTokenizer
-from pyspark.sql.functions import udf
-from pyspark.sql.types import IntegerType
 from pyspark.ml import Pipeline
 
 import json
+import sys
 
 
 def tf_idf(col_name):
@@ -66,7 +67,9 @@ def main():
     print("Create Spark Session ...")
     spark = SparkSession.builder.appName("Big Data project").getOrCreate()
 
-    replication = ((3 * 2) * 2)
+    numExecutors = int(sys.argv[1])
+
+    replication = ((numExecutors * 2) * 2)  # ((numExecutors  executorCore)  replicationFactor)
 
     print("Load Dataset ...")
     dataset = load_dataset(sc=sc, file_name="dataset/info_texts.json", replication=replication)
