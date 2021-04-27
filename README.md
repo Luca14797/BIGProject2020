@@ -5,6 +5,7 @@
 3. [Implementation](#Implementation)
 4. [Run Project](#Run-project)
 5. [Results](#Results)
+3. [Contributors](#Contributors)
 
 ## Introduction
 
@@ -56,9 +57,8 @@ For example, if the cluster contains 3 workers, the dataset is divided into 12 p
 
 The Bag-of-Word is created by first dividing the texts into single words and then calculating the frequency of the terms,
 i.e. the number of times a word appears in the text.
-(DESCRIVERE IMPLEMENTAIONE NELLA RELAZIONE)
 
-After creating the Bag of Word, a multilevel perceptron was trained using Apache Spark's MLlib library.
+After creating the Bag of Word, a Multilevel Perceptron was trained using Apache Spark's MLlib library.
 
 ## Run project
 
@@ -144,3 +144,7 @@ The project was tested using 1 to 8 workers. The times obtained are as follows:
 |   6   |   66  |
 |   7   |   60  |
 |   8   |   55  |
+
+## Contributors
+[Martina Salis](https://github.com/martinasalis) <br/>
+[Luca Grassi](https://github.com/Luca14797)
