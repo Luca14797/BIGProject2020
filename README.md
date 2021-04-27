@@ -99,7 +99,7 @@ $SPARK_HOME/bin/spark-submit --master spark://namenode:7077 main.py 8
 
 12. After the execution is finished, exit from master node and destroy the cluster using this command:
 ```bash
-Terraform destroy
+terraform destroy
 ```
 
 ## Results
