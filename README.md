@@ -1,8 +1,9 @@
-# BigData Project
+# Big Data Project
 
 1. [Introduction](#Introduction)
 2. [Project description](#Project-description)
 3. [Run Project](#Run-project)
+4. [Results](#Results)
 
 ## Introduction
 
@@ -30,34 +31,87 @@ The dataset is composed of textual tweets which are associated with three labels
 * sexist
 * homophobic
 * religion based attacks 
-* attacks to other communities.
+* attacks to other communities
 
 ## Run project
 
-### Download project
+1. [Download and Install](https://learn.hashicorp.com/tutorials/terraform/install-cli?in=terraform/aws-get-started) Terraform
 
-Download the project from github.
+
+2. [Download](https://github.com/martinasalis/Terraform_project) Terraform project
+
+
+3. Enter in the Terraform project directory
+```bash
+cd Terraform_project/
+```
+
+4. Login in your AWS account and create a key pairs in **PEM** format.
+   Follow [this](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html#having-ec2-create-your-key-pair) guide.
+   After you create a key pairs download and save it in ```Terraform_project/``` folder.
+   
+
+5. Open the file ```terraform.tfvars``` and insert your data
+```
+access_key="<YOUR ACCESS KEY>"
+secret_key="<YOUR SECRET KEY>"
+token="<YOUR TOKEN>"
+aws_private_key_name="<YOUR KEY NAME>"
+aws_private_key_path="<YOUR KEY NAME>.pem"
+slaves_count=<NUMBER CLUSTER WORKER>
+```
+
+6. Open terminal in ```Terraform_project/``` directory and insert these commands:
+```bash
+terraform init
+terraform apply
+```
+
+7. After the cluster is created, the **PUBLIC IP** and **PUBLIC DNS** of the master node are shown.
+   Connect to it using this command:
+```bash
+ssh -i '<YOUR KEY NAME>.pem' ubuntu@<PUBLIC DNS>
+```
+
+8. Download this project from github in master node.
 ```bash
 git clone https://github.com/Luca14797/BIGProject2020.git
 ```
 
-### Prepare dataset
-
-Move the dataset of the project into HDFS for run correctly the project.
+9. Move the dataset of the project into HDFS for run correctly the project.
 ```bash
 hdfs dfs -mkdir -p /user/ubuntu
 hdfs dfs -put /home/ubuntu/BIGProject2020/dataset/ /user/ubuntu
 ```
 
-### Execute project
+10. During execution of the project you can control it on the Spark GUI on your browser. 
+    Connect to ```<PUBLIC IP>:8080```.
+    
 
-The number beside ```main.py``` indicates the number of nodes created on aws to run the project.
-
-**Depending on the number of active workers, the parameter value must be changed.**
-
-In the command below, 8 was entered as a value because 8 worker nodes were used to run the project.
-The maximum number of workers accepted is 8.
+11. Run the project. The number beside ```main.py``` indicates the number of workers created on aws to run the project.
+    **Depending on the number of active workers, the parameter value must be changed.**
+    In the command below, 8 was entered as a value because 8 workers were used to run the project. 
+    The maximum number of workers accepted is 8.
 ```bash
 cd BIGProject2020/src/
 $SPARK_HOME/bin/spark-submit --master spark://namenode:7077 main.py 8
 ```
+
+12. After the execution is finished, exit from master node and destroy the cluster using this command:
+```bash
+Terraform destroy
+```
+
+## Results
+The project was tested using 1 to 8 workers. The times obtained are as follows:
+
+|   Num. workers    |   Time (s)    |
+|---    |---    |
+|   1   |   228 |
+|   2   |   132 |
+|   3   |   102 |
+|   4   |   84  |
+|   5   |   72  |
+|   6   |   66  |
+|   7   |   60  |
+|   8   |   55  |
