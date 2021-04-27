@@ -2,8 +2,9 @@
 
 1. [Introduction](#Introduction)
 2. [Project description](#Project-description)
-3. [Run Project](#Run-project)
-4. [Results](#Results)
+3. [Implementation](#Implementation)
+4. [Run Project](#Run-project)
+5. [Results](#Results)
 
 ## Introduction
 
@@ -33,6 +34,8 @@ The dataset is composed of textual tweets which are associated with three labels
 * religion based attacks 
 * attacks to other communities
 
+## Implementation
+
 ## Run project
 
 1. [Download and Install](https://learn.hashicorp.com/tutorials/terraform/install-cli?in=terraform/aws-get-started) Terraform
@@ -51,7 +54,9 @@ cd Terraform_project/
    After you create a key pairs download and save it in ```Terraform_project/``` folder.
    
 
-5. Open the file ```terraform.tfvars``` and insert your data
+5. Open the file ```terraform.tfvars``` and insert your data.
+    * If you are using AWS Educate you can retrive your values in the Vocareum page you get after having logged in by clicking on the button "Account Details" under the voice "AWS CLI".
+    * If you are using the normal AWS follow the guide on [this](https://aws.amazon.com/it/blogs/security/how-to-find-update-access-keys-password-mfa-aws-management-console/) page in the paragraph called "Generate access keys for programmatic access".
 ```
 access_key="<YOUR ACCESS KEY>"
 secret_key="<YOUR SECRET KEY>"
@@ -88,7 +93,7 @@ hdfs dfs -put /home/ubuntu/BIGProject2020/dataset/ /user/ubuntu
     Connect to ```<PUBLIC IP>:8080```.
     
 
-11. Run the project. The number beside ```main.py``` indicates the number of workers created on aws to run the project.
+11. Run the project. The number beside ```main.py``` indicates the number of workers created on AWS to run the project.
     **Depending on the number of active workers, the parameter value must be changed.**
     In the command below, 8 was entered as a value because 8 workers were used to run the project. 
     The maximum number of workers accepted is 8.
