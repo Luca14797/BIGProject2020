@@ -36,6 +36,30 @@ The dataset is composed of textual tweets which are associated with three labels
 
 ## Implementation
 
+The goal of this project is to determine if the text of a tweet contains elements related to hatred, whether it is racial, sexist, etc. or not.
+The classification problem is solved through the use of a Bag of Word; the extracted features are then used for the training of a Multilevel Perceptron.
+
+To speed up the execution of the project, the Apache Spark framework was used, which allows you to distribute the work among the nodes of a cluster.
+
+The tweets are contained in a json file and each of them is described by the following fields:
+* **id**: unique tweet identifier
+* **img_url**: url of the image, if it is present
+* **labels**: list of 3 labels, as a number
+* **tweet_url**: url of tweet
+* **tweet_text**: text of the tweet
+* **labels_str**: list of 3 labels, as a string
+
+The dataset is saved inside a Dataframe which is partitioned according to the number of currently 
+active worker nodes according to the following formula: ```((numExecutors * executorCore) * replicationFactor)```.
+This is done to reduce execution times as each worker in the cluster works on a subset of the original dataset. 
+For example, if the cluster contains 3 workers, the dataset is divided into 12 parts.
+
+The Bag-of-Word is created by first dividing the texts into single words and then calculating the frequency of the terms,
+i.e. the number of times a word appears in the text.
+(DESCRIVERE IMPLEMENTAIONE NELLA RELAZIONE)
+
+After creating the Bag of Word, a multilevel perceptron was trained using Apache Spark's MLlib library.
+
 ## Run project
 
 1. [Download and Install](https://learn.hashicorp.com/tutorials/terraform/install-cli?in=terraform/aws-get-started) Terraform
