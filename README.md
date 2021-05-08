@@ -117,13 +117,10 @@ hdfs dfs -put /home/ubuntu/BIGProject2020/dataset/ /user/ubuntu
     Connect to ```<PUBLIC IP>:8080```.
     
 
-11. Run the project. The number beside ```main.py``` indicates the number of workers created on AWS to run the project.
-    **Depending on the number of active workers, the parameter value must be changed.**
-    In the command below, 8 was entered as a value because 8 workers were used to run the project. 
-    The maximum number of workers accepted is 8.
+11. Run the project.
 ```bash
 cd BIGProject2020/src/
-$SPARK_HOME/bin/spark-submit --master spark://namenode:7077 main.py 8
+$SPARK_HOME/bin/spark-submit --master spark://namenode:7077 main.py
 ```
 
 12. After the execution is finished, exit from master node and destroy the cluster using this command:
