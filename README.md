@@ -75,7 +75,11 @@ cd Terraform_project/
 
 4. Login in your AWS account and create a key pairs in **PEM** format.
    Follow [this](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html#having-ec2-create-your-key-pair) guide.
-   After you create a key pairs download and save it in ```Terraform_project/``` folder.
+   After you create a key pairs download and save it in ```Terraform_project/``` folder. 
+   Change the permission of the key pairs by inserting this command.
+```bash
+chmod 400 <YOUR KEY NAME>.pem
+```
    
 
 5. Open the file ```terraform.tfvars``` and insert your data.
@@ -123,7 +127,10 @@ cd BIGProject2020/src/
 $SPARK_HOME/bin/spark-submit --master spark://namenode:7077 main.py
 ```
 
-12. After the execution is finished, exit from master node and destroy the cluster using this command:
+12. After the execution is finished, exit from master node.
+
+
+13. Destroy the cluster using this command:
 ```bash
 terraform destroy
 ```
