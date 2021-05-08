@@ -8,7 +8,6 @@ from pyspark.ml.feature import HashingTF, IDF, RegexTokenizer
 from pyspark.ml import Pipeline
 
 import json
-import sys
 
 
 # This function create the model 'Bag-of-Words'
@@ -52,9 +51,9 @@ def create_pipeline(tokenizer, hashingTF, idf, dataset):
 
 
 # This function load the json file containing the tweets
-def load_dataset(sc, file_name, replication):
+def load_dataset(sc, file_name, partitions):
 
-    info_texts = sc.textFile(file_name, replication)
+    info_texts = sc.textFile(file_name, partitions)
 
     data = info_texts.map(lambda x: json.loads(x)).toDF()
 
@@ -63,13 +62,13 @@ def load_dataset(sc, file_name, replication):
 
 # This function select only the tweets text and
 # split the dataset based on the split files
-def load_texts(sc, base_path, data_info, split_name, replication):
+def load_texts(sc, base_path, data_info, split_name, partitions):
 
     # Upload the file containing a list of tweet texts
-    texts = sc.textFile(base_path + "/texts_list.txt", replication)
+    texts = sc.textFile(base_path + "/texts_list.txt", partitions)
 
     # Upload the split file
-    texts_split = sc.textFile(base_path + '/splits/' + split_name + '.txt', replication).collect()
+    texts_split = sc.textFile(base_path + '/splits/' + split_name + '.txt', partitions).collect()
 
     # Only tweet text are selected
     texts_list = texts.filter(lambda x: x in texts_split).collect()
@@ -83,24 +82,23 @@ def load_texts(sc, base_path, data_info, split_name, replication):
 def main():
 
     print("Create Spark Context ...")
-    conf = SparkConf().setAppName("Big Data project")
-    sc = SparkContext.getOrCreate(conf=conf)
+    conf = SparkConf().setAll([("spark.app.name", "Big Data project"),
+                               ("spark.ui.showConsoleProgress", "true")])
+    sc = SparkContext(conf=conf).getOrCreate()
+    sc.setLogLevel("WARN")
 
     print("Create Spark Session ...")
     spark = SparkSession.builder.appName("Big Data project").getOrCreate()
 
-    # This param define the number of workers
-    numExecutors = int(sys.argv[1])
-
     # Compute the number of partitions
-    replication = ((numExecutors * 2) * 2)  # ((numExecutors * executorCore) * replicationFactor)
+    partitions = (sc.defaultParallelism * 2)  # (numClusterCores * replicationFactor)
 
     print("Load Dataset ...")
-    dataset = load_dataset(sc=sc, file_name="dataset/info_texts.json", replication=replication)
+    dataset = load_dataset(sc=sc, file_name="dataset/info_texts.json", partitions=partitions)
 
     print("Split Dataset ...")
-    trainingData = load_texts(sc=sc, base_path="dataset", data_info=dataset, split_name='train', replication=replication)
-    testData = load_texts(sc=sc, base_path="dataset", data_info=dataset, split_name='test', replication=replication)
+    trainingData = load_texts(sc=sc, base_path="dataset", data_info=dataset, split_name='train', partitions=partitions)
+    testData = load_texts(sc=sc, base_path="dataset", data_info=dataset, split_name='test', partitions=partitions)
 
     print("Prepare Multilayer Perceptron ...")
     # Prepare training data
