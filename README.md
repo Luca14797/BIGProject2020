@@ -50,10 +50,11 @@ The tweets are contained in a json file and each of them is described by the fol
 * **tweet_text**: text of the tweet
 * **labels_str**: list of 3 labels, as a string
 
-The dataset is saved inside a Dataframe which is partitioned according to the number of currently 
-active worker nodes according to the following formula: ```((numExecutors * executorCore) * replicationFactor)```.
+The dataset is saved inside a Dataframe which is partitioned according to the number of cores available in the cluster 
+according to the following formula: ```numClusterCores * replicationFactor```.
 This is done to reduce execution times as each worker in the cluster works on a subset of the original dataset. 
-For example, if the cluster contains 3 workers, the dataset is divided into 12 parts.
+For example, if the cluster contains 3 slave nodes with 2 cores for each node and the replication factor is 2, 
+the number of partitions of the Dataframe is 12.
 
 The Bag-of-Word is created by first dividing the texts into single words and then calculating the frequency of the terms,
 i.e. the number of times a word appears in the text.
