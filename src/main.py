@@ -2,7 +2,7 @@ from pyspark import SparkContext, SparkConf
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import udf
 from pyspark.sql.types import IntegerType
-from pyspark.ml.classification import MultilayerPerceptronClassifier
+from pyspark.ml.classification import MultilayerPerceptronClassifier, LogisticRegression
 from pyspark.ml.evaluation import MulticlassClassificationEvaluator, BinaryClassificationEvaluator
 from pyspark.ml.feature import HashingTF, IDF, RegexTokenizer
 from pyspark.ml import Pipeline
@@ -123,16 +123,18 @@ def main():
     # Create the trainer and set its parameters
     trainer = MultilayerPerceptronClassifier(maxIter=10, layers=layers, blockSize=128, seed=1234)
 
+    lr = LogisticRegression(maxIter=10)
+
     # Define the pipeline for training data
-    pipeline = Pipeline(stages=[tokenizer, hashingTF, idf, trainer])
+    pipeline = Pipeline(stages=[tokenizer, hashingTF, idf, lr])
 
     # Define the Param Grid
     paramGrid = ParamGridBuilder().addGrid(hashingTF.numFeatures, [100, 150, 200])\
-        .addGrid(trainer.stepSize, [0.03, 0.02, 0.01]).addGrid(trainer.solver, ["gd", "l-bfgs"]).build()
+        .addGrid(lr.regParam, [0.1, 0.01]).build()
 
     print("Start Cross Validation ...")
     crossVal = CrossValidator(estimator=pipeline, estimatorParamMaps=paramGrid,
-                              evaluator=MulticlassClassificationEvaluator(),
+                              evaluator=BinaryClassificationEvaluator(),
                               numFolds=10)
 
     cvModel = crossVal.fit(trainingData)
@@ -141,7 +143,7 @@ def main():
     # Compute accuracy on the test set
     result = cvModel.transform(testData)
     predictionAndLabels = result.select("prediction", "label")
-    evaluator = MulticlassClassificationEvaluator(metricName="accuracy")
+    evaluator = BinaryClassificationEvaluator(metricName="accuracy")
     print("Test set accuracy = " + str(evaluator.evaluate(predictionAndLabels)))
 
 
