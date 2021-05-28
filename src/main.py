@@ -108,14 +108,14 @@ def main():
     testData = load_texts(sc=sc, base_path="dataset", data_info=dataset, split_name='test', partitions=partitions)
 
     print("Prepare Multilayer Perceptron ...")
-    # Prepare training data
-    tokenizer, hashingTF, idf = tf_idf(col_name="tweet_text", doCV=True)
-    trainingData = transform_labels(trainingData)
-
     # Prepare test data
     tokenizer, hashingTF, idf = tf_idf(col_name="tweet_text", doCV=False)
     testData = transform_labels(testData)
     testData = create_pipeline(tokenizer, hashingTF, idf, testData)
+
+    # Prepare training data
+    tokenizer, hashingTF, idf = tf_idf(col_name="tweet_text", doCV=True)
+    trainingData = transform_labels(trainingData)
 
     print("Multilayer Perceptron Training ...")
     layers = [150, 64, 16, 2]
@@ -123,16 +123,16 @@ def main():
     # Create the trainer and set its parameters
     trainer = MultilayerPerceptronClassifier(maxIter=10, layers=layers, blockSize=128, seed=1234)
 
+    # Define the pipeline for training data
+    pipeline = Pipeline(stages=[tokenizer, hashingTF, idf, trainer])
+
     # Define the Param Grid
     paramGrid = ParamGridBuilder().addGrid(hashingTF.numFeatures, [100, 150, 200])\
         .addGrid(trainer.stepSize, [0.03, 0.02, 0.01]).addGrid(trainer.solver, ["gd", "l-bfgs"]).build()
 
-    # Define the pipeline for training data
-    pipeline = Pipeline(stages=[tokenizer, hashingTF, idf, trainer])
-
     print("Start Cross Validation ...")
     crossVal = CrossValidator(estimator=pipeline, estimatorParamMaps=paramGrid,
-                              evaluator=BinaryClassificationEvaluator(),
+                              evaluator=MulticlassClassificationEvaluator(),
                               numFolds=10)
 
     cvModel = crossVal.fit(trainingData)
@@ -141,7 +141,7 @@ def main():
     # Compute accuracy on the test set
     result = cvModel.transform(testData)
     predictionAndLabels = result.select("prediction", "label")
-    evaluator = BinaryClassificationEvaluator(metricName="accuracy")
+    evaluator = MulticlassClassificationEvaluator(metricName="accuracy")
     print("Test set accuracy = " + str(evaluator.evaluate(predictionAndLabels)))
 
 
