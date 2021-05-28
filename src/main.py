@@ -3,7 +3,7 @@ from pyspark.sql import SparkSession
 from pyspark.sql.functions import udf
 from pyspark.sql.types import IntegerType
 from pyspark.ml.classification import MultilayerPerceptronClassifier
-from pyspark.ml.evaluation import MulticlassClassificationEvaluator
+from pyspark.ml.evaluation import MulticlassClassificationEvaluator, BinaryClassificationEvaluator
 from pyspark.ml.feature import HashingTF, IDF, RegexTokenizer
 from pyspark.ml import Pipeline
 from pyspark.ml.tuning import CrossValidator, ParamGridBuilder
@@ -101,11 +101,11 @@ def main():
     partitions = (sc.defaultParallelism * 2)  # (numClusterCores * replicationFactor)
 
     print("Load Dataset ...")
-    dataset = load_dataset(sc=sc, file_name="../dataset/info_texts.json", partitions=partitions)
+    dataset = load_dataset(sc=sc, file_name="dataset/info_texts.json", partitions=partitions)
 
     print("Split Dataset ...")
-    trainingData = load_texts(sc=sc, base_path="../dataset", data_info=dataset, split_name='train', partitions=partitions)
-    testData = load_texts(sc=sc, base_path="../dataset", data_info=dataset, split_name='test', partitions=partitions)
+    trainingData = load_texts(sc=sc, base_path="dataset", data_info=dataset, split_name='train', partitions=partitions)
+    testData = load_texts(sc=sc, base_path="dataset", data_info=dataset, split_name='test', partitions=partitions)
 
     print("Prepare Multilayer Perceptron ...")
     # Prepare training data
@@ -132,7 +132,7 @@ def main():
 
     print("Start Cross Validation ...")
     crossVal = CrossValidator(estimator=pipeline, estimatorParamMaps=paramGrid,
-                              evaluator=MulticlassClassificationEvaluator(metricName="accuracy"),
+                              evaluator=BinaryClassificationEvaluator(),
                               numFolds=10)
 
     cvModel = crossVal.fit(trainingData)
@@ -141,7 +141,7 @@ def main():
     # Compute accuracy on the test set
     result = cvModel.transform(testData)
     predictionAndLabels = result.select("prediction", "label")
-    evaluator = MulticlassClassificationEvaluator(metricName="accuracy")
+    evaluator = BinaryClassificationEvaluator(metricName="accuracy")
     print("Test set accuracy = " + str(evaluator.evaluate(predictionAndLabels)))
 
 
