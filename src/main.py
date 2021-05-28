@@ -6,18 +6,25 @@ from pyspark.ml.classification import MultilayerPerceptronClassifier
 from pyspark.ml.evaluation import MulticlassClassificationEvaluator
 from pyspark.ml.feature import HashingTF, IDF, RegexTokenizer
 from pyspark.ml import Pipeline
+from pyspark.ml.tuning import CrossValidator, ParamGridBuilder
 
 import json
 
 
 # This function create the model 'Bag-of-Words'
-def tf_idf(col_name):
+def tf_idf(col_name, doCV):
 
     # Split the tweet text in words and delete punctuation and special characters
     tokenizer = RegexTokenizer(inputCol=col_name, outputCol="words", pattern="\\W")
 
-    # Compute term frequency
-    hashingTF = HashingTF(inputCol="words", outputCol="rawFeatures", numFeatures=150)
+    # If we doing the Cross Validation the number of features is not set
+    if doCV:
+        # Compute term frequency
+        hashingTF = HashingTF(inputCol="words", outputCol="rawFeatures")
+
+    else:
+        # Compute term frequency
+        hashingTF = HashingTF(inputCol="words", outputCol="rawFeatures", numFeatures=150)
 
     # Compute inverse document frequency and remove sparse terms
     idf = IDF(inputCol="rawFeatures", outputCol="features", minDocFreq=5)  # minDocFreq: remove sparse terms
@@ -94,20 +101,19 @@ def main():
     partitions = (sc.defaultParallelism * 2)  # (numClusterCores * replicationFactor)
 
     print("Load Dataset ...")
-    dataset = load_dataset(sc=sc, file_name="dataset/info_texts.json", partitions=partitions)
+    dataset = load_dataset(sc=sc, file_name="../dataset/info_texts.json", partitions=partitions)
 
     print("Split Dataset ...")
-    trainingData = load_texts(sc=sc, base_path="dataset", data_info=dataset, split_name='train', partitions=partitions)
-    testData = load_texts(sc=sc, base_path="dataset", data_info=dataset, split_name='test', partitions=partitions)
+    trainingData = load_texts(sc=sc, base_path="../dataset", data_info=dataset, split_name='train', partitions=partitions)
+    testData = load_texts(sc=sc, base_path="../dataset", data_info=dataset, split_name='test', partitions=partitions)
 
     print("Prepare Multilayer Perceptron ...")
     # Prepare training data
-    tokenizer, hashingTF, idf = tf_idf("tweet_text")
+    tokenizer, hashingTF, idf = tf_idf(col_name="tweet_text", doCV=True)
     trainingData = transform_labels(trainingData)
-    trainingData = create_pipeline(tokenizer, hashingTF, idf, trainingData)
 
     # Prepare test data
-    tokenizer, hashingTF, idf = tf_idf("tweet_text")
+    tokenizer, hashingTF, idf = tf_idf(col_name="tweet_text", doCV=False)
     testData = transform_labels(testData)
     testData = create_pipeline(tokenizer, hashingTF, idf, testData)
 
@@ -117,12 +123,23 @@ def main():
     # Create the trainer and set its parameters
     trainer = MultilayerPerceptronClassifier(maxIter=10, layers=layers, blockSize=128, seed=1234)
 
-    # Train the model
-    model = trainer.fit(trainingData)
+    # Define the Param Grid
+    paramGrid = ParamGridBuilder().addGrid(hashingTF.numFeatures, [100, 150, 200])\
+        .addGrid(trainer.stepSize, [0.03, 0.02, 0.01]).addGrid(trainer.solver, ["gd", "l-bfgs"]).build()
+
+    # Define the pipeline for training data
+    pipeline = Pipeline(stages=[tokenizer, hashingTF, idf, trainer])
+
+    print("Start Cross Validation ...")
+    crossVal = CrossValidator(estimator=pipeline, estimatorParamMaps=paramGrid,
+                              evaluator=MulticlassClassificationEvaluator(metricName="accuracy"),
+                              numFolds=10)
+
+    cvModel = crossVal.fit(trainingData)
 
     print("Compute Accuracy ...")
     # Compute accuracy on the test set
-    result = model.transform(testData)
+    result = cvModel.transform(testData)
     predictionAndLabels = result.select("prediction", "label")
     evaluator = MulticlassClassificationEvaluator(metricName="accuracy")
     print("Test set accuracy = " + str(evaluator.evaluate(predictionAndLabels)))
