@@ -2,7 +2,7 @@ from pyspark import SparkContext, SparkConf
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import udf
 from pyspark.sql.types import IntegerType
-from pyspark.ml.classification import LogisticRegression
+from pyspark.ml.classification import MultilayerPerceptronClassifier
 from pyspark.ml.evaluation import MulticlassClassificationEvaluator
 from pyspark.ml.feature import HashingTF, IDF, RegexTokenizer
 from pyspark.ml import Pipeline
@@ -18,7 +18,7 @@ def tf_idf(col_name):
     tokenizer = RegexTokenizer(inputCol=col_name, outputCol="words", pattern="\\W")
 
     # Compute term frequency
-    hashingTF = HashingTF(inputCol="words", outputCol="rawFeatures")
+    hashingTF = HashingTF(inputCol="words", outputCol="rawFeatures", numFeatures=150)
 
     # Compute inverse document frequency and remove sparse terms
     idf = IDF(inputCol="rawFeatures", outputCol="features", minDocFreq=5)  # minDocFreq: remove sparse terms
@@ -101,7 +101,7 @@ def main():
     trainingData = load_texts(sc=sc, base_path="dataset", data_info=dataset, split_name='train', partitions=partitions)
     testData = load_texts(sc=sc, base_path="dataset", data_info=dataset, split_name='test', partitions=partitions)
 
-    print("Prepare Logistic Regression ...")
+    print("Prepare Multilayer Perceptron ...")
     # Prepare test data
     testData = transform_labels(testData)
 
@@ -109,21 +109,22 @@ def main():
     tokenizer, hashingTF, idf = tf_idf(col_name="tweet_text")
     trainingData = transform_labels(trainingData)
 
-    print("Logistic Regression Training ...")
-    # Create logistic regression
-    lr = LogisticRegression(maxIter=10)
+    print("Multilayer Perceptron Training ...")
+    layers = [150, 64, 16, 2]
+
+    # Create the trainer and set its parameters
+    ml = MultilayerPerceptronClassifier(maxIter=10, layers=layers, blockSize=128, seed=1234)
 
     # Define the pipeline for training data
-    pipeline = Pipeline(stages=[tokenizer, hashingTF, idf, lr])
+    pipeline = Pipeline(stages=[tokenizer, hashingTF, idf, ml])
 
     # Define the Param Grid
-    paramGrid = ParamGridBuilder().addGrid(hashingTF.numFeatures, [100, 150, 200])\
-        .addGrid(lr.regParam, [0.1, 0.01]).build()
+    paramGrid = ParamGridBuilder().addGrid(ml.solver, ["gd", "l-bfgs"]).build()
 
     print("Start Cross Validation ...")
     crossVal = CrossValidator(estimator=pipeline, estimatorParamMaps=paramGrid,
                               evaluator=MulticlassClassificationEvaluator(),
-                              numFolds=10)
+                              numFolds=3)
 
     cvModel = crossVal.fit(trainingData)
 
