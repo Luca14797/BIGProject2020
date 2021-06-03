@@ -27,7 +27,7 @@ def tf_idf(col_name):
 
 
 # This function create a single label for each tweet texts
-def transform_labels(dataset):
+def transform_labels_majority(dataset):
 
     # Each one of the 150,000 tweets is labeled by 3 different workers using AMT
     # labels: array with 3 numeric labels [0-5] indicating the label by each one of the three AMT annotators
@@ -41,12 +41,17 @@ def transform_labels(dataset):
     return dataset
 
 
-# The function create a pipeline to be applied to the dataset
-def create_pipeline(tokenizer, hashingTF, idf, dataset):
+# This function create a single label for each tweet texts
+def transform_labels_person(dataset, person):
 
-    pipeline = Pipeline(stages=[tokenizer, hashingTF, idf])
-    pipelineFit = pipeline.fit(dataset)
-    dataset = pipelineFit.transform(dataset)
+    # Each one of the 150,000 tweets is labeled by 3 different workers using AMT
+    # labels: array with 3 numeric labels [0-5] indicating the label by each one of the three AMT annotators
+    # 	      0 - NotHate, 1 - Racist, 2 - Sexist, 3 - Homophobe, 4 - Religion, 5 - OtherHate
+    # For this project only two labels were considered: Hate and NotHate
+    # To determine the label, the label in position 'col' of each tweet is checked
+    to_single_label = udf(lambda x: 0 if x[len(x) - person] == 0 else 1, IntegerType())
+
+    dataset = dataset.withColumn("label", to_single_label(dataset.labels))
 
     return dataset
 
@@ -82,6 +87,18 @@ def load_texts(sc, base_path, data_info, split_name, partitions):
 
 def main():
 
+    # This flag indicate if the label is formed by using all three labels included in the dataset (majority)
+    # or if the label il formed selecting one of the labels included in the dataset (person)
+    # If this flag is set to True the label is majority
+    # If this flag is set to False one of the labels il selected
+    majority = False
+
+    # This flag indicate which of the three labels of the dataset is selected
+    # 3 -> first person
+    # 2 -> second person
+    # 1 -> third person
+    person = 1
+
     print("Create Spark Context ...")
     conf = SparkConf().setAll([("spark.app.name", "Big Data project"),
                                ("spark.ui.showConsoleProgress", "true")])
@@ -95,37 +112,46 @@ def main():
     partitions = (sc.defaultParallelism * 2)  # (numClusterCores * replicationFactor)
 
     print("Load Dataset ...")
-    dataset = load_dataset(sc=sc, file_name="dataset/info_texts.json", partitions=partitions)
+    dataset = load_dataset(sc=sc, file_name="../dataset/info_texts.json", partitions=partitions)
 
     print("Split Dataset ...")
-    trainingData = load_texts(sc=sc, base_path="dataset", data_info=dataset, split_name='train', partitions=partitions)
-    testData = load_texts(sc=sc, base_path="dataset", data_info=dataset, split_name='test', partitions=partitions)
+    trainingData = load_texts(sc=sc, base_path="../dataset", data_info=dataset, split_name='train', partitions=partitions)
+    testData = load_texts(sc=sc, base_path="../dataset", data_info=dataset, split_name='test', partitions=partitions)
 
-    print("Prepare Multilayer Perceptron ...")
+    print("Prepare Dataset ...")
     # Prepare test data
-    testData = transform_labels(testData)
+    if majority:
+        testData = transform_labels_majority(dataset=testData)
+    else:
+        testData = transform_labels_person(dataset=testData, person=person)
 
     # Prepare training data
-    tokenizer, hashingTF, idf = tf_idf(col_name="tweet_text")
-    trainingData = transform_labels(trainingData)
+    if majority:
+        trainingData = transform_labels_majority(dataset=trainingData)
+    else:
+        trainingData = transform_labels_person(dataset=trainingData, person=person)
 
-    print("Multilayer Perceptron Training ...")
+    tokenizer, hashingTF, idf = tf_idf(col_name="tweet_text")
+
+    print("Prepare Multilayer Perceptron ...")
     layers = [150, 64, 16, 2]
 
     # Create the trainer and set its parameters
-    ml = MultilayerPerceptronClassifier(maxIter=10, layers=layers, blockSize=128, seed=1234)
+    ml = MultilayerPerceptronClassifier(maxIter=10, layers=layers, blockSize=128, seed=1234, labelCol="label")
 
+    print("Prepare Cross Validation ...")
     # Define the pipeline for training data
     pipeline = Pipeline(stages=[tokenizer, hashingTF, idf, ml])
 
     # Define the Param Grid
-    paramGrid = ParamGridBuilder().addGrid(ml.solver, ["gd", "l-bfgs"]).build()
+    paramGrid = ParamGridBuilder().addGrid(ml.solver, ["gd", "l-bfgs"])\
+        .addGrid(ml.stepSize, [0.03, 0.02, 0.01]).build()
 
-    print("Start Cross Validation ...")
     crossVal = CrossValidator(estimator=pipeline, estimatorParamMaps=paramGrid,
                               evaluator=MulticlassClassificationEvaluator(),
                               numFolds=3)
 
+    print("Start Cross Validation ...")
     cvModel = crossVal.fit(trainingData)
 
     print("Compute Accuracy ...")
