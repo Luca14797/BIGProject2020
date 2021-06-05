@@ -34,7 +34,7 @@ def transform_labels_majority(dataset):
     # 	      0 - NotHate, 1 - Racist, 2 - Sexist, 3 - Homophobe, 4 - Religion, 5 - OtherHate
     # For this project only two labels were considered: Hate and NotHate
     # To determine the label, the three labels of each tweet were checked
-    to_single_label = udf(lambda x: 0 if x.count(0) > 1 else 1, IntegerType())
+    to_single_label = udf(lambda x: 0 if x.count(0) > 0 else 1, IntegerType())
 
     dataset = dataset.withColumn("label", to_single_label(dataset.labels))
 
