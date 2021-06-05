@@ -34,7 +34,7 @@ def transform_labels_majority(dataset):
     # 	      0 - NotHate, 1 - Racist, 2 - Sexist, 3 - Homophobe, 4 - Religion, 5 - OtherHate
     # For this project only two labels were considered: Hate and NotHate
     # To determine the label, the three labels of each tweet were checked
-    to_single_label = udf(lambda x: 0 if x.count(0) > 0 else 1, IntegerType())
+    to_single_label = udf(lambda x: 0 if x.count(0) > 1 else 1, IntegerType())
 
     dataset = dataset.withColumn("label", to_single_label(dataset.labels))
 
@@ -49,9 +49,16 @@ def transform_labels_person(dataset, person):
     # 	      0 - NotHate, 1 - Racist, 2 - Sexist, 3 - Homophobe, 4 - Religion, 5 - OtherHate
     # For this project only two labels were considered: Hate and NotHate
     # To determine the label, the label in position 'col' of each tweet is checked
-    to_single_label = udf(lambda x: 0 if x[len(x) - person] == 0 else 1, IntegerType())
 
-    dataset = dataset.withColumn("label", to_single_label(dataset.labels))
+    if person == 3:
+        to_single_label = udf(lambda x: 0 if x[0] == 0 else 1, IntegerType())
+
+        dataset = dataset.withColumn("label", to_single_label(dataset.labels))
+
+    else:
+        to_single_label = udf(lambda x: 0 if x[len(x) - person] == 0 else 1, IntegerType())
+
+        dataset = dataset.withColumn("label", to_single_label(dataset.labels))
 
     return dataset
 
@@ -91,13 +98,13 @@ def main():
     # or if the label il formed selecting one of the labels included in the dataset (person)
     # If this flag is set to True the label is majority
     # If this flag is set to False one of the labels il selected
-    majority = False
+    majority = True
 
     # This flag indicate which of the three labels of the dataset is selected
     # 3 -> first person
     # 2 -> second person
     # 1 -> third person
-    person = 1
+    person = 3
 
     print("Create Spark Context ...")
     conf = SparkConf().setAll([("spark.app.name", "Big Data project"),
@@ -112,22 +119,24 @@ def main():
     partitions = (sc.defaultParallelism * 2)  # (numClusterCores * replicationFactor)
 
     print("Load Dataset ...")
-    dataset = load_dataset(sc=sc, file_name="../dataset/info_texts.json", partitions=partitions)
+    dataset = load_dataset(sc=sc, file_name="dataset/info_texts.json", partitions=partitions)
 
     print("Split Dataset ...")
-    trainingData = load_texts(sc=sc, base_path="../dataset", data_info=dataset, split_name='train', partitions=partitions)
-    testData = load_texts(sc=sc, base_path="../dataset", data_info=dataset, split_name='test', partitions=partitions)
+    trainingData = load_texts(sc=sc, base_path="dataset", data_info=dataset, split_name='train', partitions=partitions)
+    testData = load_texts(sc=sc, base_path="dataset", data_info=dataset, split_name='test', partitions=partitions)
 
     print("Prepare Dataset ...")
     # Prepare test data
     if majority:
         testData = transform_labels_majority(dataset=testData)
+
     else:
         testData = transform_labels_person(dataset=testData, person=person)
 
     # Prepare training data
     if majority:
         trainingData = transform_labels_majority(dataset=trainingData)
+
     else:
         trainingData = transform_labels_person(dataset=trainingData, person=person)
 
@@ -149,7 +158,7 @@ def main():
 
     crossVal = CrossValidator(estimator=pipeline, estimatorParamMaps=paramGrid,
                               evaluator=MulticlassClassificationEvaluator(),
-                              numFolds=3)
+                              numFolds=5)
 
     print("Start Cross Validation ...")
     cvModel = crossVal.fit(trainingData)
