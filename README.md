@@ -63,13 +63,15 @@ After creating the Bag of Word, a Multilevel Perceptron was trained using Apache
 
 ## Run project
 
-1. [Download and Install](https://learn.hashicorp.com/tutorials/terraform/install-cli?in=terraform/aws-get-started) Terraform
+1. [Download and Install](https://learn.hashicorp.com/tutorials/terraform/install-cli?in=terraform/aws-get-started) Terraform.
 
 
-2. [Download](https://github.com/martinasalis/Terraform_project) Terraform project
+2. Clone [Terraform project](https://github.com/martinasalis/Terraform_project).
+```bash
+git clone https://github.com/martinasalis/Terraform_project.git
+```
 
-
-3. Enter in the Terraform project directory
+3. Enter in the Terraform project directory.
 ```bash
 cd Terraform_project/
 ```
@@ -84,7 +86,7 @@ chmod 400 <YOUR KEY NAME>.pem
    
 
 5. Open the file ```terraform.tfvars``` and insert your data.
-    * If you are using AWS Educate you can retrive your values in the Vocareum page you get after having logged in by clicking on the button "Account Details" under the voice "AWS CLI".
+    * If you are using AWS Educate you can retrieve your values in the Vocareum page you get after having logged in by clicking on the button "Account Details" under the voice "AWS CLI".
     * If you are using the normal AWS follow the guide on [this](https://aws.amazon.com/it/blogs/security/how-to-find-update-access-keys-password-mfa-aws-management-console/) page in the paragraph called "Generate access keys for programmatic access".
     
     The maximum number of worker nodes is 8.
@@ -97,7 +99,7 @@ aws_private_key_path="<YOUR KEY NAME>.pem"
 slaves_count=<NUMBER CLUSTER WORKER>
 ```
 
-6. Open terminal in ```Terraform_project/``` directory and insert these commands:
+6. Open terminal in ```Terraform_project/``` directory and insert these commands (one by one):
 ```bash
 terraform init
 terraform apply
@@ -109,7 +111,7 @@ terraform apply
 ssh -i '<YOUR KEY NAME>.pem' ubuntu@<PUBLIC DNS>
 ```
 
-8. Start Hadoop and Spark cluster by inserting this commands (one by one):
+8. Start Hadoop and Spark cluster by inserting these commands (one by one):
 ```bash
 hdfs namenode -format
 $HADOOP_HOME/sbin/start-dfs.sh
@@ -126,7 +128,7 @@ git clone https://github.com/Luca14797/BIGProject2020.git
 
 10. Open the file ```dataset.py``` and insert your data from line 11 to line 13.
    The file is located in ```BIGProject2020/src/```.
-   * If you are using AWS Educate you can retrive your values in the Vocareum page you get after having logged in by clicking on the button "Account Details" under the voice "AWS CLI".
+   * If you are using AWS Educate you can retrieve your values in the Vocareum page you get after having logged in by clicking on the button "Account Details" under the voice "AWS CLI".
    * If you are using the normal AWS follow the guide on [this](https://aws.amazon.com/it/blogs/security/how-to-find-update-access-keys-password-mfa-aws-management-console/) page in the paragraph called "Generate access keys for programmatic access".
    
 ```
@@ -165,9 +167,11 @@ terraform destroy
 ```
 
 ## Results
-The project was tested using 1 to 8 workers. The times obtained are as follows:
+The project was tested using 1 to 8 workers.
 
-|   Num. workers    |   Time (s)    |
+The first test consists in training a Multilayer Perceptron without the use of Cross-Validation and using instances on AWS of type ```t2.large```. The following table shows the results, time is reported in seconds.
+
+|   # workers    |   Time (s)    |
 |---    |---    |
 |   1   |   228 |
 |   2   |   132 |
@@ -178,18 +182,18 @@ The project was tested using 1 to 8 workers. The times obtained are as follows:
 |   7   |   60  |
 |   8   |   55  |
 
+The second test consists in training a Multilayer Perceptron using Cross-Validation and using instances on AWS of the type ```t2.medium```. The following table shows the results, time is reported in minutes.
 
-
-|   Num. workers    |   Time (s)    |
+|   # workers    |   Time (m)    |
 |---    |---    |
-|   1   |   228 |
-|   2   |   132 |
-|   3   |   102 |
-|   4   |   84  |
-|   5   |   72  |
-|   6   |   66  |
-|   7   |   60  |
-|   8   |   55  |
+|   1   |   19 |
+|   2   |   11 |
+|   3   |   7,9 |
+|   4   |   6,2  |
+|   5   |   5,2  |
+|   6   |   4,7  |
+|   7   |   4,5  |
+|   8   |   4,2  |
 
 ## Contributors
 [Martina Salis](https://github.com/martinasalis) <br/>
