@@ -109,7 +109,7 @@ terraform apply
 ssh -i '<YOUR KEY NAME>.pem' ubuntu@<PUBLIC DNS>
 ```
 
-8. Start Hadoop and Spark cluster by inseting this commands (one by one):
+8. Start Hadoop and Spark cluster by inserting this commands (one by one):
 ```bash
 hdfs namenode -format
 $HADOOP_HOME/sbin/start-dfs.sh
@@ -166,6 +166,19 @@ terraform destroy
 
 ## Results
 The project was tested using 1 to 8 workers. The times obtained are as follows:
+
+|   Num. workers    |   Time (s)    |
+|---    |---    |
+|   1   |   228 |
+|   2   |   132 |
+|   3   |   102 |
+|   4   |   84  |
+|   5   |   72  |
+|   6   |   66  |
+|   7   |   60  |
+|   8   |   55  |
+
+
 
 |   Num. workers    |   Time (s)    |
 |---    |---    |
