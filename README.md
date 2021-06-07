@@ -109,31 +109,57 @@ terraform apply
 ssh -i '<YOUR KEY NAME>.pem' ubuntu@<PUBLIC DNS>
 ```
 
-8. Download this project from github in master node.
+8. Start Hadoop and Spark cluster by inseting this commands (one by one):
+```bash
+hdfs namenode -format
+$HADOOP_HOME/sbin/start-dfs.sh
+$HADOOP_HOME/sbin/start-yarn.sh
+$HADOOP_HOME/sbin/mr-jobhistory-daemon.sh start historyserver
+$SPARK_HOME/sbin/start-master.sh
+$SPARK_HOME/sbin/start-slaves.sh spark://namenode:7077
+```
+
+9. Download this project from github in master node.
 ```bash
 git clone https://github.com/Luca14797/BIGProject2020.git
 ```
 
-9. Move the dataset of the project into HDFS for run correctly the project.
+10. Open the file ```dataset.py``` and insert your data from line 11 to line 13.
+   The file is located in ```BIGProject2020/src/```.
+   * If you are using AWS Educate you can retrive your values in the Vocareum page you get after having logged in by clicking on the button "Account Details" under the voice "AWS CLI".
+   * If you are using the normal AWS follow the guide on [this](https://aws.amazon.com/it/blogs/security/how-to-find-update-access-keys-password-mfa-aws-management-console/) page in the paragraph called "Generate access keys for programmatic access".
+   
+```
+ACCESS_KEY="<YOUR ACCESS KEY>"
+SECRET_KEY="<YOUR SECRET KEY>"
+TOKEN="<YOUR TOKEN>"
+```
+
+11. To download the dataset from AWS S3 run the following script:
+```bash
+python3 BIGProject2020/src/dataset.py
+```
+
+12. Move the dataset of the project into HDFS for run correctly the project.
 ```bash
 hdfs dfs -mkdir -p /user/ubuntu
 hdfs dfs -put /home/ubuntu/BIGProject2020/dataset/ /user/ubuntu
 ```
 
-10. During execution of the project you can control it on the Spark GUI on your browser. 
+13. During execution of the project you can control it on the Spark GUI on your browser. 
     Connect to ```<PUBLIC IP>:8080```.
     
 
-11. Run the project.
+14. Run the project.
 ```bash
 cd BIGProject2020/src/
 $SPARK_HOME/bin/spark-submit --master spark://namenode:7077 main.py
 ```
 
-12. After the execution is finished, exit from master node.
+15. After the execution is finished, exit from master node.
 
 
-13. Destroy the cluster using this command:
+16. Destroy the cluster using this command:
 ```bash
 terraform destroy
 ```
