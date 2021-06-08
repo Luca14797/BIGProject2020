@@ -126,42 +126,32 @@ $SPARK_HOME/sbin/start-slaves.sh spark://namenode:7077
 git clone https://github.com/Luca14797/BIGProject2020.git
 ```
 
-10. Open the file ```dataset.py``` and insert your data from line 11 to line 13.
-   The file is located in ```BIGProject2020/src/```.
-   * If you are using AWS Educate you can retrieve your values in the Vocareum page you get after having logged in by clicking on the button "Account Details" under the voice "AWS CLI".
-   * If you are using the normal AWS follow the guide on [this](https://aws.amazon.com/it/blogs/security/how-to-find-update-access-keys-password-mfa-aws-management-console/) page in the paragraph called "Generate access keys for programmatic access".
-   
+10. Execute the script ```dataset.sh``` to download the dataset from AWS S3. Run these commands (one by one):
 ```
-ACCESS_KEY="<YOUR ACCESS KEY>"
-SECRET_KEY="<YOUR SECRET KEY>"
-TOKEN="<YOUR TOKEN>"
+chmod +x BIGProject2020/src/dataset.sh
+/bin/bash BIGProject2020/src/dataset.sh
 ```
 
-11. To download the dataset from AWS S3 run the following script:
-```bash
-python3 BIGProject2020/src/dataset.py
-```
-
-12. Move the dataset of the project into HDFS for run correctly the project.
+11. Move the dataset of the project into HDFS for run correctly the project.
 ```bash
 hdfs dfs -mkdir -p /user/ubuntu
 hdfs dfs -put /home/ubuntu/BIGProject2020/dataset/ /user/ubuntu
 ```
 
-13. During execution of the project you can control it on the Spark GUI on your browser. 
+12. During execution of the project you can control it on the Spark GUI on your browser. 
     Connect to ```<PUBLIC IP>:8080```.
     
 
-14. Run the project.
+13. Run the project.
 ```bash
 cd BIGProject2020/src/
 $SPARK_HOME/bin/spark-submit --master spark://namenode:7077 main.py
 ```
 
-15. After the execution is finished, exit from master node.
+14. After the execution is finished, exit from master node.
 
 
-16. Destroy the cluster using this command:
+15. Destroy the cluster using this command:
 ```bash
 terraform destroy
 ```
