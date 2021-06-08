@@ -129,7 +129,7 @@ git clone https://github.com/Luca14797/BIGProject2020.git
 10. Execute the script ```dataset.sh``` to download the dataset from AWS S3. Run these commands (one by one):
 ```
 chmod +x BIGProject2020/src/dataset.sh
-/bin/bash BIGProject2020/src/dataset.sh
+sudo /bin/bash BIGProject2020/src/dataset.sh
 ```
 
 11. Move the dataset of the project into HDFS for run correctly the project.
