@@ -1,7 +1,7 @@
 #!/bin/bash
 
-sudo mkdir /home/ubuntu/BIGProject2020/dataset
-sudo mkdir /home/ubuntu/BIGProject2020/dataset/split
+mkdir /home/ubuntu/BIGProject2020/dataset
+mkdir /home/ubuntu/BIGProject2020/dataset/split
 
 wget https://s3-terraform-bucket-big.s3.amazonaws.com/train.txt -P /home/ubuntu/BIGProject2020/dataset/split
 wget https://s3-terraform-bucket-big.s3.amazonaws.com/test.txt -P /home/ubuntu/BIGProject2020/dataset/split
