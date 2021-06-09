@@ -38,7 +38,7 @@ The dataset is composed of textual tweets which are associated with three labels
 ## Implementation
 
 The goal of this project is to determine if the text of a tweet contains elements related to hatred, whether it is racial, sexist, etc. or not.
-The classification problem is solved through the use of a Bag of Word; the extracted features are then used for the training of a Multilevel Perceptron.
+The classification problem is solved through the use of a Bag-of-Words; the extracted features are then used for the training of a Multilayer Perceptron.
 
 To speed up the execution of the project, the Apache Spark framework was used, which allows you to distribute the work among the nodes of a cluster.
 
@@ -56,10 +56,10 @@ This is done to reduce execution times as each worker in the cluster works on a 
 For example, if the cluster contains 3 slave nodes with 2 cores for each node and the replication factor is 2, 
 the number of partitions of the Dataframe is 12.
 
-The Bag-of-Word is created by first dividing the texts into single words and then calculating the frequency of the terms,
+The Bag-of-Words is created by first dividing the texts into single words and then calculating the frequency of the terms,
 i.e. the number of times a word appears in the text.
 
-After creating the Bag of Word, a Multilevel Perceptron was trained using Apache Spark's MLlib library.
+After creating the Bag-of-Words, a Multilayer Perceptron was trained using Apache Spark's MLlib library.
 
 ## Run project
 
@@ -111,7 +111,7 @@ terraform apply
 ssh -i '<YOUR KEY NAME>.pem' ubuntu@<PUBLIC DNS>
 ```
 
-8. Start Hadoop and Spark cluster by inserting these commands (one by one):
+8. Start Hadoop and Spark cluster by inserting these commands (one by one) in the master node:
 ```bash
 hdfs namenode -format
 $HADOOP_HOME/sbin/start-dfs.sh
@@ -121,7 +121,7 @@ $SPARK_HOME/sbin/start-master.sh
 $SPARK_HOME/sbin/start-slaves.sh spark://namenode:7077
 ```
 
-9. Download this project from github in master node.
+9. Download this project from GitHub in the master node.
 ```bash
 git clone https://github.com/Luca14797/BIGProject2020.git
 ```
