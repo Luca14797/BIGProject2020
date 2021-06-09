@@ -158,7 +158,7 @@ def main():
 
     crossVal = CrossValidator(estimator=pipeline, estimatorParamMaps=paramGrid,
                               evaluator=MulticlassClassificationEvaluator(),
-                              numFolds=5)
+                              numFolds=5, parallelism=3)
 
     print("Start Cross Validation ...")
     cvModel = crossVal.fit(trainingData)
